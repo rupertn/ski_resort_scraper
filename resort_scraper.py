@@ -21,6 +21,8 @@ def get_resort_info(mountain_url):
     page = requests.get(mountain_url)
     soup = bs(page.text, 'html.parser')
 
+    info = []
+
 
 region_list = ['britishcolumbia', 'alberta', 'montana', 'idaho', 'wyoming', 'utah', 'colorado', 'california', 'nevada',
                'oregon', 'washington', 'arizona', 'newmexico', 'alaska']
