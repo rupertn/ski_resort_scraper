@@ -19,8 +19,19 @@ def get_resort_urls(reg):
     return resort_urls
 
 
+def get_resort_address(info, soup):
+    contact = soup.find('div', class_='addressblock')
+
+    if contact is not None:
+        address = contact.text.split('Email:')[0].split('Address:')[1].strip()
+    else:
+        address = contact
+    info.append(address)
+
+
 def get_overview_stats(info, soup):
     overview_table = soup.find('table', id='mountainstatistics').find('tbody')  # main mountain stats
+
     for row in overview_table.find_all('tr')[:8]:
         info.append(row.find_all('td')[1].text)
 
@@ -32,15 +43,17 @@ def get_lift_stats(info, soup):
 
 
 def get_ticket_info(info, soup):
-    tickets_table = soup.find('table', class_='tickettable table').find('tbody')  # ticket pricing
-    ticket_head = tickets_table.find('tr')
-    adult = ticket_head.find('th', id='adult')
-    adult_idx = int((ticket_head.index(adult) - 1) / 2)
+    tickets_table = soup.find('table', class_='tickettable table').find('tbody')
 
-    for row in tickets_table.find_all('tr')[1:]:
-        if row.find('td').text == 'Regular':
-            adult_ticket = row.find_all('td')[adult_idx].text  # adult regular pricing
-            info.append(adult_ticket)
+    for row in tickets_table.find_all('tr'):
+        if row.find('td') is not None:  # check that the row is not the header
+            if row.find('td').text == 'Regular':
+                max_price = None
+                for col in row.find_all('td')[1:]:
+                    price = int(col.text.split('$')[1])
+                    if max_price is None or price > max_price:
+                        max_price = price
+                info.append(max_price)
 
 
 def get_resort_info(mountain_url):
@@ -49,6 +62,7 @@ def get_resort_info(mountain_url):
 
     info = [soup.find('div', class_='resortname').text]  # resort name
 
+    get_resort_address(info, soup)
     get_overview_stats(info, soup)
     get_lift_stats(info, soup)
     get_ticket_info(info, soup)
@@ -62,11 +76,12 @@ region_list = ['britishcolumbia', 'alberta', 'montana', 'idaho', 'wyoming', 'uta
 table = []
 
 start = time.time()
-for region in ['newmexico']:
+for region in ['alberta']:
     mountain_urls = get_resort_urls(region)
 
     for url in mountain_urls:
         get_resort_info(url)
         print('Collected resort info for {}'.format(url))
+        time.sleep(1)
 
 print(table)
