@@ -3,30 +3,36 @@ from bs4 import BeautifulSoup as bs
 import time
 
 
-def get_resort_urls(reg):
-    base_url = 'https://www.skicentral.com/'
-    full_url = base_url + reg + '.html'
-
-    page = requests.get(full_url)
-    soup = bs(page.text, 'html.parser')
+def get_resort_urls():
+    region_list = ['britishcolumbia', 'alberta', 'montana', 'idaho', 'wyoming', 'utah', 'colorado', 'california',
+                   'nevada', 'oregon', 'washington', 'arizona', 'newmexico', 'alaska']
 
     resort_urls = []
 
-    for resort in soup.find_all('div', class_='resorttitle'):
-        link = resort.find('a')
-        resort_urls.append(base_url + link['href'])
+    for region in region_list:
+        base_url = 'https://www.skicentral.com/'
+        full_url = base_url + region + '.html'
+
+        page = requests.get(full_url)
+        soup = bs(page.text, 'html.parser')
+
+        for resort in soup.find_all('div', class_='resorttitle'):
+            link = resort.find('a')
+            resort_urls.append(base_url + link['href'])
+
+        time.sleep(1)
 
     return resort_urls
 
 
 def get_resort_address(info, soup):
-    contact = soup.find('div', class_='addressblock')
-
-    if contact is not None:
+    try:
+        contact = soup.find('div', class_='addressblock')
         address = contact.text.split('Email:')[0].split('Address:')[1].strip()
-    else:
-        address = contact
-    info.append(address)
+        info.append(address)
+
+    except AttributeError:
+        info.append(None)
 
 
 def get_overview_stats(info, soup):
@@ -43,17 +49,21 @@ def get_lift_stats(info, soup):
 
 
 def get_ticket_info(info, soup):
-    tickets_table = soup.find('table', class_='tickettable table').find('tbody')
+    try:
+        tickets_table = soup.find('table', class_='tickettable table').find('tbody')
 
-    for row in tickets_table.find_all('tr'):
-        if row.find('td') is not None:  # check that the row is not the header
-            if row.find('td').text == 'Regular':
-                max_price = None
-                for col in row.find_all('td')[1:]:
-                    price = int(col.text.split('$')[1])
-                    if max_price is None or price > max_price:
-                        max_price = price
-                info.append(max_price)
+        for row in tickets_table.find_all('tr'):
+            if row.find('td') is not None:  # check that the row is not the header
+                if row.find('td').text == 'Regular':
+                    max_price = None
+                    for col in row.find_all('td')[1:]:
+                        price = int(col.text.split('$')[1])
+                        if max_price is None or price > max_price:
+                            max_price = price
+                    info.append(max_price)
+
+    except AttributeError:
+        info.append(None)
 
 
 def get_resort_info(mountain_url):
@@ -70,18 +80,15 @@ def get_resort_info(mountain_url):
     table.append(info)
 
 
-region_list = ['britishcolumbia', 'alberta', 'montana', 'idaho', 'wyoming', 'utah', 'colorado', 'california', 'nevada',
-               'oregon', 'washington', 'arizona', 'newmexico', 'alaska']
-
 table = []
-
 start = time.time()
-for region in ['alberta']:
-    mountain_urls = get_resort_urls(region)
 
-    for url in mountain_urls:
-        get_resort_info(url)
-        print('Collected resort info for {}'.format(url))
-        time.sleep(1)
+mountain_urls = get_resort_urls()
+print('Collected URLs for {} ski resorts.'.format(len(mountain_urls)))
 
-print(table)
+for url in mountain_urls:
+    get_resort_info(url)
+    time.sleep(1)
+
+print('Collected resort info for {} ski resorts'.format(len(table)))
+print('Completed scraping in: {}'.format(time.time() - start))
