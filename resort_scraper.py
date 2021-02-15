@@ -1,6 +1,6 @@
 import requests
 from bs4 import BeautifulSoup as bs
-import pandas
+import pandas as pd
 import time
 from datetime import datetime
 
@@ -11,7 +11,7 @@ def get_resort_urls():
     region_list = ['britishcolumbia', 'alberta', 'montana', 'idaho', 'wyoming', 'utah', 'colorado', 'california',
                    'nevada', 'oregon', 'washington', 'arizona', 'newmexico', 'alaska']
 
-    region_l = ['arizona']
+    region_l = ['newmexico']
 
     resort_urls = []
 
@@ -33,6 +33,7 @@ def get_resort_urls():
 
 def get_resort_address(info, soup):
     """Acquires the resort address, if available."""
+
     try:
         contact = soup.find('div', class_='addressblock')
         address = contact.text.split('Email:')[0].split('Address:')[1].strip()
@@ -44,6 +45,7 @@ def get_resort_address(info, soup):
 
 def get_overview_stats(info, soup):
     """Acquires the main resort statistics."""
+
     overview_table = soup.find('table', id='mountainstatistics').find('tbody')
 
     for row in overview_table.find_all('tr')[:8]:
@@ -52,6 +54,7 @@ def get_overview_stats(info, soup):
 
 def get_lift_stats(info, soup):
     """Finds the total number of lifts."""
+
     lifts_table = soup.find('table', id='lifts').find('tbody')
     num_lifts = lifts_table.find('tr').find_all('td')[1].text
     info.append(num_lifts)
@@ -59,11 +62,12 @@ def get_lift_stats(info, soup):
 
 def get_ticket_info(info, soup):
     """Acquires the regular price for an adult single day ticket, if available."""
+
     try:
         tickets_table = soup.find('table', class_='tickettable table').find('tbody')
 
         for row in tickets_table.find_all('tr'):
-            if row.find('td') is not None:  # check that the row is not the header
+            if row.find('td') is not None:  # checks that the row is not the header
                 if row.find('td').text == 'Regular':
                     max_price = None
                     for col in row.find_all('td')[1:]:
@@ -82,8 +86,9 @@ def clean(info):
             info[idx] = value.split()[0]
 
 
-def get_resort_info(mountain_url):
+def get_resort_info(mountain_url, table):
     """Collects the resort information for a single resort."""
+
     page = requests.get(mountain_url)
     soup = bs(page.text, 'html.parser')
 
@@ -99,17 +104,32 @@ def get_resort_info(mountain_url):
     table.append(info)
 
 
-table = []
-start = datetime.now()
-print('Collecting resort URLs...')
-mountain_urls = get_resort_urls()
-print('Collected URLs for {} resorts.'.format(len(mountain_urls)))
-print('Collecting resort information...')
+def export_data(resort_data):
+    df = pd.DataFrame(resort_data)
 
-for url in mountain_urls:
-    get_resort_info(url)
-    time.sleep(1)
 
-print('Collected resort information for {} resorts.'.format(len(table)))
-print('Export to SQL Complete! The entire process took {}.'.format(datetime.now() - start))
-print(table)
+def scrape_resorts():
+    """Calls functions required to scrape the resort information for all resorts in the region list."""
+
+    start = datetime.now()
+
+    print('Collecting resort URLs...')
+    mountain_urls = get_resort_urls()
+    print('Collected URLs for {} resorts.'.format(len(mountain_urls)))
+
+    print('Collecting resort information...')
+
+    table = []
+    for url in mountain_urls:
+        get_resort_info(url, table)
+        time.sleep(1)
+
+    print('Collected resort information for {} resorts.'.format(len(table)))
+
+    export_data(table)
+    print('Export to SQL Complete! The entire process took {}.'.format(datetime.now() - start))
+
+
+if __name__ == '__main__':
+
+    scrape_resorts()
