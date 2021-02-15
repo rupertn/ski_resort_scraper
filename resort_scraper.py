@@ -4,6 +4,8 @@ import time
 
 
 def get_resort_urls():
+    """ Adjust the region list below if desired. Use skicentral.com to see which regions are available."""
+
     region_list = ['britishcolumbia', 'alberta', 'montana', 'idaho', 'wyoming', 'utah', 'colorado', 'california',
                    'nevada', 'oregon', 'washington', 'arizona', 'newmexico', 'alaska']
 
@@ -66,6 +68,12 @@ def get_ticket_info(info, soup):
         info.append(None)
 
 
+def clean(info):
+    for idx, col in enumerate(info):
+        if (2 <= idx < 6) and (col != 'n/a' or col is not None):
+            info[idx] = col.split()[0]
+
+
 def get_resort_info(mountain_url):
     page = requests.get(mountain_url)
     soup = bs(page.text, 'html.parser')
@@ -76,6 +84,8 @@ def get_resort_info(mountain_url):
     get_overview_stats(info, soup)
     get_lift_stats(info, soup)
     get_ticket_info(info, soup)
+
+    clean(info)
 
     table.append(info)
 
