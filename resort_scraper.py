@@ -1,6 +1,7 @@
 import requests
 from bs4 import BeautifulSoup as bs
 import pandas as pd
+from sqlalchemy import create_engine
 import time
 from datetime import datetime
 
@@ -12,7 +13,6 @@ def get_resort_urls():
                    'nevada', 'oregon', 'washington', 'arizona', 'newmexico', 'alaska']
 
     region_l = ['newmexico']
-
     resort_urls = []
 
     for region in region_l:
@@ -61,7 +61,7 @@ def get_lift_stats(info, soup):
 
 
 def get_ticket_info(info, soup):
-    """Acquires the regular price for an adult single day ticket, if available."""
+    """Acquires the regular price for an adult single day lift ticket, if available."""
 
     try:
         tickets_table = soup.find('table', class_='tickettable table').find('tbody')
@@ -105,7 +105,18 @@ def get_resort_info(mountain_url, table):
 
 
 def export_data(resort_data):
+    """Exports resort information to a PostgreSQL database."""
+
     df = pd.DataFrame(resort_data)
+    df.columns = ['resort_name', 'address', 'vertical', 'base', 'peak', 'avg_snow', 'runs', 'acres', 'long_run',
+                  'snow_making', 'lifts', 'adult_price']
+
+    conn_string = 'postgresql://name:password@host/database'  # input your unique connection string
+
+    engine = create_engine(conn_string)
+    conn = engine.connect()
+
+    df.to_sql('resorts', con=conn, if_exists='replace', index=False)
 
 
 def scrape_resorts():
@@ -115,19 +126,15 @@ def scrape_resorts():
 
     print('Collecting resort URLs...')
     mountain_urls = get_resort_urls()
-    print('Collected URLs for {} resorts.'.format(len(mountain_urls)))
-
-    print('Collecting resort information...')
-
+    print('Collected URLs for {} resorts. \nGathering resort information...'.format(len(mountain_urls)))
     table = []
     for url in mountain_urls:
         get_resort_info(url, table)
         time.sleep(1)
 
-    print('Collected resort information for {} resorts.'.format(len(table)))
-
+    print('Collected resort information for {} resorts. \nExporting to PostgreSQL...'.format(len(table)))
     export_data(table)
-    print('Export to SQL Complete! The entire process took {}.'.format(datetime.now() - start))
+    print('Export to PostgreSQL complete! The entire process took {}.'.format(datetime.now() - start))
 
 
 if __name__ == '__main__':
