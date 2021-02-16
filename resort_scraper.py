@@ -85,22 +85,27 @@ def clean(info):
             info[idx] = value.split()[0]
 
 
-def get_resort_info(mountain_url, table):
-    """Collects the resort information for a single resort."""
+def get_resort_info(mountain_urls):
+    """Collects the resort information."""
 
-    page = requests.get(mountain_url)
-    soup = bs(page.text, 'html.parser')
+    table = []
+    for url in mountain_urls:
+        page = requests.get(url)
+        soup = bs(page.text, 'html.parser')
 
-    info = [soup.find('div', class_='resortname').text]  # initialize list with resort name
+        info = [soup.find('div', class_='resortname').text]  # initialize list with resort name
 
-    get_resort_address(info, soup)
-    get_overview_stats(info, soup)
-    get_lift_stats(info, soup)
-    get_ticket_info(info, soup)
+        get_resort_address(info, soup)
+        get_overview_stats(info, soup)
+        get_lift_stats(info, soup)
+        get_ticket_info(info, soup)
 
-    clean(info)
+        clean(info)
 
-    table.append(info)
+        table.append(info)
+        time.sleep(1)  # Added a delay to avoid overloading the servers
+
+    return table
 
 
 def export_data(resort_data):
@@ -125,14 +130,13 @@ def scrape_resorts():
 
     print('Collecting resort URLs...')
     mountain_urls = get_resort_urls()
-    print('Collected URLs for {} resorts. \nGathering resort information...'.format(len(mountain_urls)))
-    table = []
-    for url in mountain_urls:
-        get_resort_info(url, table)
-        time.sleep(1)
 
-    print('Collected resort information for {} resorts. \nExporting to PostgreSQL...'.format(len(table)))
-    export_data(table)
+    print('Collected URLs for {} resorts. \nGathering resort information...'.format(len(mountain_urls)))
+    resort_data = get_resort_info(mountain_urls)
+
+    print('Collected resort information for each resort. \nExporting to PostgreSQL...')
+    export_data(resort_data)
+
     print('Export to PostgreSQL complete! The entire process took {}.'.format(datetime.now() - start))
 
 
