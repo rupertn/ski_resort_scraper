@@ -1,5 +1,5 @@
 # Web Scraper for Ski Resort Information
-This web scraper gathers ski resort information from [skicentral.com](skicentral.com) and funnels it into a PostgreSQL database. Currently, the following attributes are collected for each resort: 
+This web scraper gathers ski resort information from [skicentral.com](https://skicentral.com) and funnels it into a PostgreSQL database. Currently, the following attributes are collected for each resort: 
   * Name
   * Address
   * Vertical (ft)
