@@ -12,10 +12,9 @@ def get_resort_urls():
     region_list = ['britishcolumbia', 'alberta', 'montana', 'idaho', 'wyoming', 'utah', 'colorado', 'california',
                    'nevada', 'oregon', 'washington', 'arizona', 'newmexico', 'alaska']
 
-    region_l = ['newmexico']
     resort_urls = []
 
-    for region in region_l:
+    for region in region_list:
         base_url = 'https://www.skicentral.com/'
         full_url = base_url + region + '.html'
 
