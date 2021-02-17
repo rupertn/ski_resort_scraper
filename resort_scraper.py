@@ -30,13 +30,20 @@ def get_resort_urls():
     return resort_urls
 
 
-def get_resort_address(info, soup):
-    """Acquires the resort address, if available."""
+def get_resort_address(url , info, soup):
+    """Acquires the resort address and region, if available."""
 
     try:
         contact = soup.find('div', class_='addressblock')
         address = contact.text.split('Email:')[0].split('Address:')[1].strip()
         info.append(address)
+
+    except AttributeError:
+        info.append(None)
+
+    try:
+        region = soup.find('div', class_='breadcrumbs').find('a', href=url.split('.com/')[1]).find_previous('a').text
+        info.append(region)
 
     except AttributeError:
         info.append(None)
@@ -81,7 +88,7 @@ def get_ticket_info(info, soup):
 
 def clean(info):
     for idx, value in enumerate(info):
-        if (2 <= idx < 6) and (value != 'n/a' or value is not None):
+        if (3 <= idx < 7) and (value != 'n/a' or value is not None):
             info[idx] = value.split()[0]
 
 
@@ -95,7 +102,7 @@ def get_resort_info(mountain_urls):
 
         info = [soup.find('div', class_='resortname').text]  # initialize list with resort name
 
-        get_resort_address(info, soup)
+        get_resort_address(url, info, soup)
         get_overview_stats(info, soup)
         get_lift_stats(info, soup)
         get_ticket_info(info, soup)
@@ -112,10 +119,10 @@ def export_data(resort_data):
     """Exports resort information to a PostgreSQL database."""
 
     df = pd.DataFrame(resort_data)
-    df.columns = ['resort_name', 'address', 'vertical', 'base', 'peak', 'avg_snow', 'runs', 'acres', 'long_run',
-                  'snow_making', 'lifts', 'adult_price']
+    df.columns = ['resort_name', 'address', 'region', 'vertical', 'base', 'peak', 'avg_snow', 'runs', 'acres',
+                  'long_run', 'snow_making', 'lifts', 'adult_price']
 
-    conn_string = 'postgresql://name:password@host/database'  # input your unique connection string
+    conn_string = 'postgresql://username:password@host/database'  # input your unique connection string
 
     engine = create_engine(conn_string)
     conn = engine.connect()
@@ -134,7 +141,7 @@ def scrape_resorts():
     print('Collected URLs for {} resorts. \nGathering resort information...'.format(len(mountain_urls)))
     resort_data = get_resort_info(mountain_urls)
 
-    print('Collected resort information for each resort. \nExporting to PostgreSQL...')
+    print('Finished collecting resort information. \nExporting to PostgreSQL...')
     export_data(resort_data)
 
     print('Export to PostgreSQL complete! The entire process took {}.'.format(datetime.now() - start))
