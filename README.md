@@ -12,4 +12,4 @@ This web scraper gathers ski resort information from [skicentral.com](https://ww
   * Longest run (miles/km)
   * Snowmaking (yes/no/percent)
   * Number of lifts
-  * Sample adult day ticket price ($USD/$CAD)
+  * Sample adult day ticket price (local currency)
